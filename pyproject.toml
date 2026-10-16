@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hop"
+version = "1.0.0"
+description = "Scans for open ports on the local machine and gives them friendly names."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+hop = "hop.src.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["hop*"]
+
+[tool.setuptools.package-data]
+hop = ["web/*.html", "web/static/*"]

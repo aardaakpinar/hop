@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>__APP__</title>
+		<link rel="icon" href="/static/logo.svg" type="image/svg+xml" />
+		<script>
+			try {
+				const t = localStorage.getItem("hop-theme");
+				document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+			} catch (e) {
+				document.documentElement.dataset.theme = "dark";
+			}
+		</script>
+		<link rel="stylesheet" href="/static/app.css" />
+	</head>
+	<body>
+		<header>
+			<div class="hd">
+				<div class="brand">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="m10.586 5.414-5.172 5.172" />
+						<path d="m18.586 13.414-5.172 5.172" />
+						<path d="M6 12h12" />
+						<circle cx="12" cy="20" r="2" />
+						<circle cx="12" cy="4" r="2" />
+						<circle cx="20" cy="12" r="2" />
+						<circle cx="4" cy="12" r="2" />
+					</svg>
+					<div><b>__APP__</b><span class="mu">Local port scanner and name router</span></div>
+				</div>
+				<div class="sp"></div>
+				<div class="pills" id="pills"></div>
+				<button class="btn icon ghost" id="theme" title="Toggle theme"></button>
+			</div>
+		</header>
+
+		<main>
+			<div id="banners"></div>
+
+			<section class="sec">
+				<div class="sec-h">
+					<h2>Routes</h2>
+					<span class="count" id="rcount">0</span>
+					<div class="sp"></div>
+					<button class="btn primary" id="addr">New route</button>
+				</div>
+				<div class="grid" id="routes"></div>
+			</section>
+
+			<section class="sec" id="scansec">
+				<div class="sec-h">
+					<button class="fold" id="fold" type="button" aria-expanded="true" aria-controls="scanpanel">
+						<h2>Port scan</h2>
+						<span class="count" id="ccount">0</span><span class="fsum mu" id="fsum"></span>
+					</button>
+				</div>
+				<div class="panel" id="scanpanel">
+					<div class="toolbar">
+						<div class="range"><input class="in num" id="s" type="number" value="1" min="1" max="65535" /><span class="mu">to</span><input class="in num" id="e" type="number" value="10000" min="1" max="65535" /></div>
+						<div class="presets">
+							<button class="chip" data-r="1-1024">System</button>
+							<button class="chip" data-r="3000-9999">Development</button>
+							<button class="chip" data-r="1-10000">1-10000</button>
+							<button class="chip" data-r="1-65535">All ports</button>
+						</div>
+						<div class="sp"></div>
+						<label class="switch" title="Scans common ports on the local /24 subnet"><input type="checkbox" id="sub" /><span class="track"></span>Scan local network too</label>
+						<button class="btn primary" id="sb"><span id="sbt">Start scan</span></button>
+					</div>
+					<div class="prog"><i id="pb"></i></div>
+					<div class="meta mu" id="pt"></div>
+					<div class="filters">
+						<button class="chip on" data-k="all">All</button>
+						<button class="chip" data-k="http">HTTP</button>
+						<button class="chip" data-k="tcp">TCP</button>
+						<button class="chip" data-k="local">Localhost</button>
+						<button class="chip" data-k="net">Network</button>
+						<div class="sp"></div>
+						<input class="in search" id="q" placeholder="Filter (press /)" autocomplete="off" />
+					</div>
+					<div class="list" id="results"></div>
+				</div>
+			</section>
+		</main>
+		<footer id="foot"></footer>
+
+		<dialog id="dlg">
+			<form id="dform" method="dialog" autocomplete="off">
+				<div class="dh" id="dtitle">New route</div>
+				<div class="db">
+					<div class="fld">
+						<label for="dn">Domain name</label>
+						<div class="ig"><input class="in" id="dn" placeholder="cti" spellcheck="false" /><span class="sfx mono" id="sfx"></span></div>
+					</div>
+					<div class="two">
+						<div class="fld"><label for="dh">Target address</label><input class="in mono" id="dh" value="127.0.0.1" spellcheck="false" /></div>
+						<div class="fld"><label for="dp">Port</label><input class="in mono" id="dp" type="number" min="1" max="65535" placeholder="3100" /></div>
+					</div>
+					<label class="switch"><input type="checkbox" id="dw" /><span class="track"></span>Rewrite the Host header to the target (for servers such as Vite)</label>
+					<div class="prev" id="dprev"></div>
+					<div class="derr" id="derr"></div>
+				</div>
+				<div class="df"><button type="button" class="btn ghost" id="dcancel">Cancel</button><button class="btn primary" id="dsave">Save</button></div>
+			</form>
+		</dialog>
+		<div id="toasts"></div>
+
+		<script src="/static/app.js"></script>
+	</body>
+</html>
