@@ -8,6 +8,7 @@ import threading
 from pathlib import Path
 from typing import Iterable
 
+from .constants import Encoding, FileExt, LogMessage, MessageTemplate
 from .errors import ConflictError, HopError
 from .models import Route
 
@@ -40,14 +41,14 @@ class RouteRegistry:
     def upsert(self, route: Route) -> None:
         with self._lock:
             if route.name in self._builtin:
-                raise ConflictError(f"{route.name} is reserved by the system")
+                raise ConflictError(MessageTemplate.reserved_by_system(route.name))
             self._user[route.name] = route
             self._save()
 
     def remove(self, name: str) -> bool:
         with self._lock:
             if name in self._builtin:
-                raise ConflictError(f"{name} cannot be deleted")
+                raise ConflictError(MessageTemplate.cannot_be_deleted(name))
             removed = self._user.pop(name, None) is not None
             if removed:
                 self._save()
@@ -56,14 +57,14 @@ class RouteRegistry:
     # -- persistence ---------------------------------------------------
     def _load(self) -> None:
         try:
-            data = json.loads(self._path.read_text(encoding="utf-8"))
+            data = json.loads(self._path.read_text(encoding=Encoding.UTF8))
             self._user = {n: Route.from_dict(n, d) for n, d in data.items() if n not in self._builtin}
         except (OSError, ValueError, TypeError, AttributeError, HopError) as exc:
-            log.debug("Could not read routes (%s): %s", self._path, exc)
+            log.debug(LogMessage.COULD_NOT_READ_ROUTES, self._path, exc)
 
     def _save(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self._path.with_suffix(".tmp")
+        tmp = self._path.with_suffix(FileExt.TMP)
         payload = {r.name: r.to_dict() for r in self._user.values()}
-        tmp.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+        tmp.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding=Encoding.UTF8)
         os.replace(tmp, self._path)

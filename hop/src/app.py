@@ -7,37 +7,49 @@ import webbrowser
 
 from .. import APP_NAME, __version__
 from .config import LOOPBACK, Settings
-from .hosts import HostsFile, SyncResult
-from .models import Route
-from .proxy import ReverseProxy
-from .registry import RouteRegistry
-from .scanner import PortScanner
-from .server import ServerContext, WebServer
-from .services import RouteService
+from .constants import LogMessage, NetConstant
+from .container import Container, create_container
+from .hosts import SyncResult
+from .protocols import (
+    HostsManagerProtocol,
+    PortScannerProtocol,
+    ReverseProxyProtocol,
+    RouteRegistryProtocol,
+    RouteServiceProtocol,
+    WebServerProtocol,
+)
 
 log = logging.getLogger(__name__)
 
 
 class Application:
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        panel = Route(settings.panel_name, LOOPBACK, settings.ui_port, builtin=True)
-        self.registry = RouteRegistry(settings.routes_file, builtin=[panel])
-        self.hosts = HostsFile(settings.hosts_path, settings.hosts_marker)
-        self.routes = RouteService(settings, self.registry, self.hosts)
-        self.proxy = ReverseProxy(self.registry, fallback_url=self.direct_url)
-        self.scanner = PortScanner(own_ports=lambda: {settings.ui_port, self.proxy.port}, user_agent=APP_NAME)
+    """Application lifecycle manager using Inversion of Control (IoC)."""
+
+    def __init__(self, target: Settings | Container):
+        if isinstance(target, Container):
+            self.container = target
+            self.settings = self.container.resolve(Settings)
+        else:
+            self.settings = target
+            self.container = create_container(self.settings)
+
+        self.registry: RouteRegistryProtocol = self.container.resolve(RouteRegistryProtocol)
+        self.hosts: HostsManagerProtocol = self.container.resolve(HostsManagerProtocol)
+        self.routes: RouteServiceProtocol = self.container.resolve(RouteServiceProtocol)
+        self.proxy: ReverseProxyProtocol = self.container.resolve(ReverseProxyProtocol)
+        self.scanner: PortScannerProtocol = self.container.resolve(PortScannerProtocol)
 
     @property
     def direct_url(self) -> str:
-        return f"http://{LOOPBACK}:{self.settings.ui_port}"
+        return f"{NetConstant.HTTP_SCHEME}{LOOPBACK}:{self.settings.ui_port}"
 
     def run(self) -> int:
         try:
-            server = WebServer(ServerContext(self.settings, self.routes, self.scanner, self.proxy))
+            server: WebServerProtocol = self.container.resolve(WebServerProtocol)
         except OSError as exc:
-            log.error("Panel port (%s) is unavailable: %s", self.settings.ui_port, exc)
+            log.error(LogMessage.PANEL_PORT_UNAVAILABLE, self.settings.ui_port, exc)
             return 1
+
         self.proxy.start(self.settings.proxy_candidates)
         sync = self.routes.sync_hosts()          # the panel name is part of this block too
         entry_url = self._report(sync)
@@ -46,7 +58,7 @@ class Application:
         try:
             server.serve_forever()
         except KeyboardInterrupt:
-            log.info("Shutting down...")
+            log.info(LogMessage.SHUTTING_DOWN)
         finally:
             server.close()
             self.proxy.stop()
@@ -55,15 +67,14 @@ class Application:
     def _report(self, sync: SyncResult) -> str:
         pretty = self.proxy.url_for(self.settings.panel_name) if self.proxy.port else None
         entry = pretty if (pretty and sync.ok) else self.direct_url
-        log.info("%s %s", APP_NAME, __version__)
-        log.info("Panel : %s", entry)
+        log.info(LogMessage.APP_VERSION_INFO, APP_NAME, __version__)
+        log.info(LogMessage.PANEL_URL_INFO, entry)
         if entry != self.direct_url:
-            log.info("Direct: %s", self.direct_url)
+            log.info(LogMessage.DIRECT_URL_INFO, self.direct_url)
         if not sync.ok:
-            log.warning("%s", sync.message)
+            log.warning(LogMessage.SYNC_WARNING, sync.message)
             for line in sync.lines:
-                log.warning("  add to hosts: %s", line)
+                log.warning(LogMessage.ADD_TO_HOSTS, line)
         if self.proxy.port not in (None, 80):
-            log.warning("Proxy is listening on port %s, so append :%s to the route addresses.",
-                        self.proxy.port, self.proxy.port)
+            log.warning(LogMessage.PROXY_PORT_WARNING, self.proxy.port, self.proxy.port)
         return entry

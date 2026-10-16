@@ -5,14 +5,15 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Mapping
 
 from .config import Settings
-from .hosts import HostsFile, SyncResult
+from .constants import ModelKey
+from .hosts import SyncResult
 from .models import Route, normalize_name, validate_host, validate_port
 from .netutil import port_is_open
-from .registry import RouteRegistry
+from .protocols import HostsManagerProtocol, RouteRegistryProtocol
 
 
 class RouteService:
-    def __init__(self, settings: Settings, registry: RouteRegistry, hosts: HostsFile):
+    def __init__(self, settings: Settings, registry: RouteRegistryProtocol, hosts: HostsManagerProtocol):
         self._settings = settings
         self._registry = registry
         self._hosts = hosts
@@ -22,13 +23,18 @@ class RouteService:
         routes = self._registry.all()
         with ThreadPoolExecutor(max_workers=16) as pool:
             alive = list(pool.map(lambda r: port_is_open(r.host, r.port), routes))
-        return {r.name: {**r.to_dict(), "builtin": r.builtin, "up": up} for r, up in zip(routes, alive)}
+        return {
+            r.name: {**r.to_dict(), ModelKey.BUILTIN: r.builtin, ModelKey.UP: up}
+            for r, up in zip(routes, alive)
+        }
 
     def save(self, payload: Mapping[str, Any]) -> SyncResult:
-        route = Route(name=normalize_name(payload.get("name"), self._settings.tld),
-                      host=validate_host(payload.get("host")),
-                      port=validate_port(payload.get("port")),
-                      rewrite_host=bool(payload.get("rewrite_host")))
+        route = Route(
+            name=normalize_name(payload.get(ModelKey.NAME), self._settings.tld),
+            host=validate_host(payload.get(ModelKey.HOST)),
+            port=validate_port(payload.get(ModelKey.PORT)),
+            rewrite_host=bool(payload.get(ModelKey.REWRITE_HOST)),
+        )
         self._registry.upsert(route)
         return self.sync_hosts()
 

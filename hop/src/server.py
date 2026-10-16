@@ -7,50 +7,83 @@ import re
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, NamedTuple
 from urllib.parse import urlsplit
 
 from .. import APP_NAME, __version__
 from .config import LOOPBACK, Settings
+from .constants import (
+    ApiPath,
+    Encoding,
+    ErrorMessage,
+    FileExt,
+    FileName,
+    HeaderValue,
+    HttpHeader,
+    HttpStatus,
+    HttpVerb,
+    LogMessage,
+    MimeType,
+    ModelKey,
+    NetConstant,
+    TemplatePlaceholder,
+)
 from .errors import HopError, NotFoundError, ValidationError
 from .netutil import is_admin, local_ip
-from .proxy import ReverseProxy
-from .scanner import PortScanner
-from .services import RouteService
+from .protocols import (
+    PortScannerProtocol,
+    ReverseProxyProtocol,
+    RouteServiceProtocol,
+)
 
 log = logging.getLogger(__name__)
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 STATIC_DIR = WEB_DIR / "static"
 MAX_BODY = 64 * 1024
-CONTENT_TYPES = {".css": "text/css", ".js": "application/javascript", ".svg": "image/svg+xml"}
-SECURITY_HEADERS = {"X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY",
-                    "Referrer-Policy": "no-referrer", "Cache-Control": "no-cache"}
+CONTENT_TYPES: dict[str, str] = {
+    FileExt.CSS: MimeType.CSS,
+    FileExt.JS: MimeType.JAVASCRIPT,
+    FileExt.SVG: MimeType.SVG,
+}
+SECURITY_HEADERS: dict[str, str] = {
+    HttpHeader.X_CONTENT_TYPE_OPTIONS: HeaderValue.NOSNIFF,
+    HttpHeader.X_FRAME_OPTIONS: HeaderValue.DENY,
+    HttpHeader.REFERRER_POLICY: HeaderValue.NO_REFERRER,
+    HttpHeader.CACHE_CONTROL: HeaderValue.NO_CACHE,
+}
 
-# (method, path regex, handler): adding an endpoint takes a single line
-_ROUTES = [(m, re.compile(p), h) for m, p, h in (
-    ("GET", r"/", "index"),
-    ("GET", r"/static/([\w.-]+)", "static"),
-    ("GET", r"/api/status", "status"),
-    ("GET", r"/api/routes", "list_routes"),
-    ("POST", r"/api/routes", "save_route"),
-    ("DELETE", r"/api/routes/([a-z0-9.-]+)", "delete_route"),
-    ("GET", r"/api/scan", "scan_state"),
-    ("POST", r"/api/scan", "start_scan"),
-)]
+
+class RouteHandler(NamedTuple):
+    verb: HttpVerb
+    pattern: re.Pattern
+    handler: Callable[[ApiHandler, tuple[str, ...]], Any]
+
+
+# (method, path regex, handler lambda): direct dispatch without reflection
+_ROUTES = (
+    RouteHandler(HttpVerb.GET, re.compile(ApiPath.ROOT), lambda h, _: h._h_index()),
+    RouteHandler(HttpVerb.GET, re.compile(ApiPath.STATIC_PATTERN), lambda h, args: h._h_static(*args)),
+    RouteHandler(HttpVerb.GET, re.compile(ApiPath.STATUS), lambda h, _: h._h_status()),
+    RouteHandler(HttpVerb.GET, re.compile(ApiPath.ROUTES), lambda h, _: h._h_list_routes()),
+    RouteHandler(HttpVerb.POST, re.compile(ApiPath.ROUTES), lambda h, _: h._h_save_route()),
+    RouteHandler(HttpVerb.DELETE, re.compile(ApiPath.ROUTE_ITEM_PATTERN), lambda h, args: h._h_delete_route(*args)),
+    RouteHandler(HttpVerb.GET, re.compile(ApiPath.SCAN), lambda h, _: h._h_scan_state()),
+    RouteHandler(HttpVerb.POST, re.compile(ApiPath.SCAN), lambda h, _: h._h_start_scan()),
+)
 
 
 @dataclass(frozen=True)
 class ServerContext:
     settings: Settings
-    routes: RouteService
-    scanner: PortScanner
-    proxy: ReverseProxy
+    routes: RouteServiceProtocol
+    scanner: PortScannerProtocol
+    proxy: ReverseProxyProtocol
 
     @property
     def allowed_hosts(self) -> frozenset:
         """DNS-rebinding protection: only these Host/Origin values are accepted."""
-        return frozenset({LOOPBACK, "localhost", self.settings.panel_name})
+        return frozenset({LOOPBACK, NetConstant.LOCALHOST, self.settings.panel_name})
 
 
 class ApiHandler(BaseHTTPRequestHandler):
@@ -59,97 +92,107 @@ class ApiHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args: Any) -> None:
         log.debug("%s - %s", self.address_string(), fmt % args)
 
-    do_GET = lambda self: self._dispatch("GET")        # noqa: E731
-    do_POST = lambda self: self._dispatch("POST")      # noqa: E731
-    do_DELETE = lambda self: self._dispatch("DELETE")  # noqa: E731
+    do_GET = lambda self: self._dispatch(HttpVerb.GET)        # noqa: E731
+    do_POST = lambda self: self._dispatch(HttpVerb.POST)      # noqa: E731
+    do_DELETE = lambda self: self._dispatch(HttpVerb.DELETE)  # noqa: E731
 
     # -- dispatch ------------------------------------------------------
-    def _dispatch(self, method: str) -> None:
+    def _dispatch(self, method: HttpVerb) -> None:
         if not self._allowed():
-            return self._json({"error": "forbidden"}, 403)
+            return self._json({ModelKey.ERROR: ErrorMessage.FORBIDDEN}, HttpStatus.FORBIDDEN)
         path = urlsplit(self.path).path
         matched = False
         try:
-            for verb, pattern, name in _ROUTES:
-                m = pattern.fullmatch(path)
+            for route in _ROUTES:
+                m = route.pattern.fullmatch(path)
                 if not m:
                     continue
                 matched = True
-                if verb == method:
-                    body = getattr(self, f"_h_{name}")(*m.groups())
+                if route.verb == method:
+                    body = route.handler(self, m.groups())
                     if body is not None:
                         self._json(body)
                     return
-            self._json({"error": "method not allowed" if matched else "not found"}, 405 if matched else 404)
+            status = HttpStatus.METHOD_NOT_ALLOWED if matched else HttpStatus.NOT_FOUND
+            error_msg = ErrorMessage.METHOD_NOT_ALLOWED if matched else ErrorMessage.NOT_FOUND
+            self._json({ModelKey.ERROR: error_msg}, status)
         except HopError as exc:
-            self._json({"error": str(exc)}, exc.status)
+            self._json({ModelKey.ERROR: str(exc)}, exc.status)
         except json.JSONDecodeError:
-            self._json({"error": "Invalid JSON"}, 400)
+            self._json({ModelKey.ERROR: ErrorMessage.INVALID_JSON}, HttpStatus.BAD_REQUEST)
         except Exception:
-            log.exception("Request failed: %s %s", method, path)
-            self._json({"error": "Server error"}, 500)
+            log.exception(LogMessage.REQUEST_FAILED, method, path)
+            self._json({ModelKey.ERROR: ErrorMessage.SERVER_ERROR}, HttpStatus.INTERNAL_SERVER_ERROR)
 
     def _allowed(self) -> bool:
-        host = (self.headers.get("Host") or "").rsplit(":", 1)[0].lower()
-        origin = self.headers.get("Origin")
+        host = (self.headers.get(HttpHeader.HOST) or "").rsplit(":", 1)[0].lower()
+        origin = self.headers.get(HttpHeader.ORIGIN)
         allowed = self.ctx.allowed_hosts
         return host in allowed and (not origin or (urlsplit(origin).hostname or "") in allowed)
 
     # -- handlers ------------------------------------------------------
     def _h_index(self) -> None:
-        html = (WEB_DIR / "index.html").read_text(encoding="utf-8").replace("__APP__", APP_NAME)
-        self._send(200, html.encode(), "text/html")
+        html = (WEB_DIR / FileName.INDEX_HTML).read_text(encoding=Encoding.UTF8).replace(TemplatePlaceholder.APP_NAME, APP_NAME)
+        self._send(HttpStatus.OK, html.encode(Encoding.UTF8), MimeType.HTML)
 
     def _h_static(self, name: str) -> None:
         path = (STATIC_DIR / name).resolve()
         if path.parent != STATIC_DIR.resolve() or not path.is_file():
-            raise NotFoundError("File not found")
-        self._send(200, path.read_bytes(), CONTENT_TYPES.get(path.suffix, "application/octet-stream"))
+            raise NotFoundError(ErrorMessage.FILE_NOT_FOUND)
+        self._send(HttpStatus.OK, path.read_bytes(), CONTENT_TYPES.get(path.suffix, MimeType.OCTET_STREAM))
 
     def _h_status(self) -> dict:
         s, proxy = self.ctx.settings, self.ctx.proxy
-        return {"app": APP_NAME, "version": __version__, "tld": s.tld, "ui_port": s.ui_port,
-                "proxy_port": proxy.port, "admin": is_admin(), "local_ip": local_ip(),
-                "hosts_path": str(s.hosts_path), "panel_name": s.panel_name,
-                "panel_url": proxy.url_for(s.panel_name)}
+        return {
+            ModelKey.APP: APP_NAME,
+            ModelKey.VERSION: __version__,
+            ModelKey.TLD: s.tld,
+            ModelKey.UI_PORT: s.ui_port,
+            ModelKey.PROXY_PORT: proxy.port,
+            ModelKey.ADMIN: is_admin(),
+            ModelKey.LOCAL_IP: local_ip(),
+            ModelKey.HOSTS_PATH: str(s.hosts_path),
+            ModelKey.PANEL_NAME: s.panel_name,
+            ModelKey.PANEL_URL: proxy.url_for(s.panel_name),
+        }
 
     def _h_list_routes(self) -> dict:
         return self.ctx.routes.list_routes()
 
     def _h_save_route(self) -> dict:
-        return {"ok": True, **self.ctx.routes.save(self._read_json()).to_dict()}
+        return {ModelKey.OK: True, **self.ctx.routes.save(self._read_json()).to_dict()}
 
     def _h_delete_route(self, name: str) -> dict:
-        return {"ok": True, **self.ctx.routes.delete(name).to_dict()}
+        return {ModelKey.OK: True, **self.ctx.routes.delete(name).to_dict()}
 
     def _h_scan_state(self) -> dict:
         return self.ctx.scanner.snapshot()
 
     def _h_start_scan(self) -> dict:
         data = self._read_json()
-        self.ctx.scanner.start(data.get("start", 1), data.get("end", 10000), bool(data.get("subnet")))
-        return {"ok": True}
+        self.ctx.scanner.start(data.get(ModelKey.START, 1), data.get(ModelKey.END, 10000), bool(data.get(ModelKey.SUBNET)))
+        return {ModelKey.OK: True}
 
     # -- helpers -------------------------------------------------------
     def _read_json(self) -> dict:
         try:
-            length = int(self.headers.get("Content-Length") or 0)
+            length = int(self.headers.get(HttpHeader.CONTENT_LENGTH) or 0)
         except ValueError:
-            raise ValidationError("Invalid Content-Length") from None
+            raise ValidationError(ErrorMessage.INVALID_CONTENT_LENGTH) from None
         if not 0 <= length <= MAX_BODY:
-            raise ValidationError("Request too large")
+            raise ValidationError(ErrorMessage.REQUEST_TOO_LARGE)
         data = json.loads(self.rfile.read(length) if length else b"{}")
         if not isinstance(data, dict):
-            raise ValidationError("Expected a JSON object")
+            raise ValidationError(ErrorMessage.EXPECTED_JSON_OBJECT)
         return data
 
-    def _json(self, obj: Any, status: int = 200) -> None:
-        self._send(status, json.dumps(obj).encode(), "application/json")
+    def _json(self, obj: Any, status: int = HttpStatus.OK) -> None:
+        self._send(status, json.dumps(obj).encode(Encoding.UTF8), MimeType.JSON)
 
     def _send(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)
-        self.send_header("Content-Type", f"{content_type}; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header(HttpHeader.CONTENT_TYPE, f"{content_type}; {HeaderValue.CHARSET_UTF8}")
+        self.send_header(HttpHeader.CONTENT_LENGTH, str(len(body)))
         for key, value in SECURITY_HEADERS.items():
             self.send_header(key, value)
         self.end_headers()

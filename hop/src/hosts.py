@@ -6,8 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-ADDRESS = "127.0.0.1"
-LOCALHOST_SUFFIX = ".localhost"      # browsers resolve these themselves, no hosts entry needed
+from .constants import Encoding, ErrorMessage, MessageTemplate, ModelKey, NetConstant
+
+ADDRESS = NetConstant.LOOPBACK
+LOCALHOST_SUFFIX = NetConstant.LOCALHOST_SUFFIX      # browsers resolve these themselves, no hosts entry needed
 
 
 @dataclass(frozen=True)
@@ -17,7 +19,11 @@ class SyncResult:
     lines: tuple[str, ...] = ()
 
     def to_dict(self) -> dict:
-        return {"hosts_ok": self.ok, "message": self.message, "lines": list(self.lines)}
+        return {
+            ModelKey.HOSTS_OK: self.ok,
+            ModelKey.MESSAGE: self.message,
+            ModelKey.LINES: list(self.lines),
+        }
 
 
 def _markers(name: str) -> tuple[str, str]:
@@ -56,12 +62,12 @@ class HostsFile:
         wanted = sorted({n for n in names if not n.endswith(LOCALHOST_SUFFIX)})
         lines = tuple(f"{ADDRESS} {n}" for n in wanted)
         try:
-            text = self._path.read_text(encoding="utf-8", errors="surrogateescape")
+            text = self._path.read_text(encoding=Encoding.UTF8, errors=Encoding.SURROGATEESCAPE)
             if self.managed_names(text) == wanted:
-                return SyncResult(True, "hosts file is already up to date", lines)
-            self._path.write_text(self.render(text, wanted), encoding="utf-8", errors="surrogateescape")
-            return SyncResult(True, "hosts file updated", lines)
+                return SyncResult(True, ErrorMessage.HOSTS_UP_TO_DATE, lines)
+            self._path.write_text(self.render(text, wanted), encoding=Encoding.UTF8, errors=Encoding.SURROGATEESCAPE)
+            return SyncResult(True, ErrorMessage.HOSTS_UPDATED, lines)
         except PermissionError:
-            return SyncResult(False, f"Could not write the hosts file (administrator/root required): {self._path}", lines)
+            return SyncResult(False, MessageTemplate.hosts_permission(self._path), lines)
         except OSError as exc:
-            return SyncResult(False, f"hosts file error: {exc}", lines)
+            return SyncResult(False, MessageTemplate.hosts_error(exc), lines)

@@ -6,11 +6,12 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from .config import LOOPBACK
+from .constants import ErrorMessage, ModelKey, NetConstant, ScanKind
 from .errors import ValidationError
 
 _NAME_RE = re.compile(r"^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$")
 _HOST_RE = re.compile(r"^[A-Za-z0-9._:-]{1,253}$")
-RESERVED_NAMES = frozenset({"localhost"})
+RESERVED_NAMES = frozenset({NetConstant.LOCALHOST})
 
 
 def normalize_name(raw: Any, tld: str) -> str:
@@ -19,7 +20,7 @@ def normalize_name(raw: Any, tld: str) -> str:
     if name and "." not in name:
         name = f"{name}.{tld}"
     if len(name) > 253 or not _NAME_RE.fullmatch(name) or name in RESERVED_NAMES:
-        raise ValidationError("Invalid name. Example: cti")
+        raise ValidationError(ErrorMessage.INVALID_NAME)
     return name
 
 
@@ -27,23 +28,23 @@ def validate_port(value: Any) -> int:
     try:
         port = int(value)
     except (TypeError, ValueError):
-        raise ValidationError("Port must be a number") from None
+        raise ValidationError(ErrorMessage.PORT_NOT_NUMBER) from None
     if not 1 <= port <= 65535:
-        raise ValidationError("Port must be between 1 and 65535")
+        raise ValidationError(ErrorMessage.PORT_OUT_OF_BOUNDS)
     return port
 
 
 def validate_host(value: Any) -> str:
     host = str(value or LOOPBACK).strip()
     if not _HOST_RE.fullmatch(host):
-        raise ValidationError("Invalid target address")
+        raise ValidationError(ErrorMessage.INVALID_TARGET_ADDRESS)
     return host
 
 
 def validate_range(start: Any, end: Any) -> tuple[int, int]:
     first, last = validate_port(start), validate_port(end)
     if first > last:
-        raise ValidationError("Start port cannot be greater than end port")
+        raise ValidationError(ErrorMessage.START_PORT_GREATER)
     return first, last
 
 
@@ -61,18 +62,26 @@ class Route:
 
     @classmethod
     def from_dict(cls, name: str, data: Mapping[str, Any]) -> "Route":
-        return cls(name=name, host=validate_host(data.get("host")), port=validate_port(data.get("port")),
-                   rewrite_host=bool(data.get("rewrite_host")))
+        return cls(
+            name=name,
+            host=validate_host(data.get(ModelKey.HOST)),
+            port=validate_port(data.get(ModelKey.PORT)),
+            rewrite_host=bool(data.get(ModelKey.REWRITE_HOST)),
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return {"host": self.host, "port": self.port, "rewrite_host": self.rewrite_host}
+        return {
+            ModelKey.HOST: self.host,
+            ModelKey.PORT: self.port,
+            ModelKey.REWRITE_HOST: self.rewrite_host,
+        }
 
 
 @dataclass
 class ScanResult:
     host: str
     port: int
-    kind: str = "tcp"               # "http" | "tcp"
+    kind: str = ScanKind.TCP               # ScanKind.HTTP | ScanKind.TCP
     title: str = ""
     server: str = ""
     status: str = ""

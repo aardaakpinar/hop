@@ -1,17 +1,20 @@
 """Application errors. The `status` attribute maps to an HTTP status code in the API layer."""
+from __future__ import annotations
+
+from .constants import HttpStatus
 
 
 class HopError(Exception):
-    status = 400
+    status = HttpStatus.BAD_REQUEST
 
 
 class ValidationError(HopError):
-    status = 400
+    status = HttpStatus.BAD_REQUEST
 
 
 class NotFoundError(HopError):
-    status = 404
+    status = HttpStatus.NOT_FOUND
 
 
 class ConflictError(HopError):
-    status = 409
+    status = HttpStatus.CONFLICT

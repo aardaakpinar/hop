@@ -4,10 +4,12 @@ from __future__ import annotations
 import os
 import socket
 
+from .constants import NetConstant, OsPlatform
+
 
 def is_admin() -> bool:
     try:
-        if os.name == "nt":
+        if os.name == OsPlatform.NT:
             import ctypes
             return bool(ctypes.windll.shell32.IsUserAnAdmin())
         return os.geteuid() == 0
@@ -19,7 +21,7 @@ def local_ip() -> str | None:
     """Local IP of the default route (no packet is actually sent)."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        sock.connect(("8.8.8.8", 80))
+        sock.connect((NetConstant.PROBE_TARGET_IP, 80))
         return sock.getsockname()[0]
     except OSError:
         return None
