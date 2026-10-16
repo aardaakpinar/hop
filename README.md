@@ -27,6 +27,10 @@ Highlights:
 - Only edits its own clearly marked block in your hosts file and leaves the rest untouched.
 - Names ending in `.localhost` work without any hosts file changes.
 
+## Screenshots
+
+![Hop control panel showing routes and the port scanner](docs/screenshot.png)
+
 ## Installation
 
 ### Requirements
