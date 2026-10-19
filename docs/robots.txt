@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aardaakpinar.github.io/hop/sitemap.xml

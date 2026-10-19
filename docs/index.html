@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Hop - Local Port Scanner and Name Router for Developers</title>
+		<meta name="description" content="Hop scans your machine for open ports and gives them memorable names. Type cti.hop and land on localhost:3100. Free, cross-platform, zero dependencies." />
+		<meta name="keywords" content="port scanner, localhost, local development, name router, reverse proxy, hosts file, dev tools, python, open ports" />
+		<meta name="author" content="aardaakpinar" />
+		<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+		<link rel="canonical" href="https://aardaakpinar.github.io/hop/" />
+
+		<meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+		<meta name="color-scheme" content="light dark" />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Hop" />
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:title" content="Hop – Stop memorizing port numbers" />
+		<meta property="og:description" content="Scan your machine for open ports and give them memorable names. cti.hop opens localhost:3100." />
+		<meta property="og:url" content="https://aardaakpinar.github.io/hop/" />
+		<meta property="og:image" content="https://aardaakpinar.github.io/hop/assets/og-image.png" />
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Hop: stop memorizing port numbers. cti.hop maps to 127.0.0.1:3100." />
+
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Hop – Stop memorizing port numbers" />
+		<meta name="twitter:description" content="Scan your machine for open ports and give them memorable names. cti.hop opens localhost:3100." />
+		<meta name="twitter:image" content="https://aardaakpinar.github.io/hop/assets/og-image.png" />
+		<meta name="twitter:image:alt" content="Hop: stop memorizing port numbers. cti.hop maps to 127.0.0.1:3100." />
+
+		<link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+		<link rel="preconnect" href="https://unpkg.com" crossorigin />
+
+		<script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@type": "SoftwareApplication",
+				"name": "Hop",
+				"alternateName": "Hop port scanner",
+				"description": "Hop scans your machine for open ports and gives them memorable names. Type cti.hop and land on localhost:3100. Free, cross-platform, zero dependencies.",
+				"url": "https://aardaakpinar.github.io/hop/",
+				"image": "https://aardaakpinar.github.io/hop/assets/og-image.png",
+				"applicationCategory": "DeveloperApplication",
+				"operatingSystem": "Windows, macOS, Linux",
+				"softwareVersion": "1.0.0",
+				"softwareRequirements": "Python 3.9 or newer",
+				"codeRepository": "https://github.com/aardaakpinar/hop",
+				"author": { "@type": "Person", "name": "aardaakpinar", "url": "https://github.com/aardaakpinar" },
+				"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+			}
+		</script>
+		<script>
+			try {
+				const t = localStorage.getItem("hop-theme");
+				document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+			} catch (e) {
+				document.documentElement.dataset.theme = "dark";
+			}
+		</script>
+		<link rel="stylesheet" href="assets/style.css" />
+	</head>
+	<body>
+		<header>
+			<div class="hd">
+				<a class="brand" href="#top">
+					<img src="assets/logo.svg" alt="Hop logo" width="34" height="34" fetchpriority="high" />
+					<div><b>Hop</b><span class="mu">Local port scanner and name router</span></div>
+				</a>
+				<div class="sp"></div>
+				<nav aria-label="Main">
+					<a href="#features">Features</a>
+					<a href="#how">How it works</a>
+					<a href="#install">Install</a>
+					<a href="#options">Options</a>
+				</nav>
+				<a class="btn sm ghost" href="https://github.com/aardaakpinar/hop" target="_blank" rel="noopener">
+					<i class="ic" data-lucide="github"></i>
+					GitHub
+				</a>
+				<button class="btn icon ghost" id="theme" title="Toggle theme" aria-label="Toggle theme"></button>
+			</div>
+		</header>
+
+		<main class="wrap" id="top">
+			<div class="hero">
+				<span class="pill ok"><span class="dot ok"></span> Zero dependencies · Python stdlib only</span>
+				<h1>Stop memorizing port numbers.</h1>
+				<p class="lead">Hop scans your machine for open ports and gives them memorable names. Type <span class="mono">cti.hop</span> in your browser and land on <span class="mono">localhost:3100</span>.</p>
+				<div class="cta">
+					<a class="btn primary" href="#install">Get started</a>
+					<a class="btn" href="https://github.com/aardaakpinar/hop" target="_blank" rel="noopener">View on GitHub</a>
+				</div>
+				<div class="install"><span class="prompt">$</span><span id="cmd">sudo python3 -m hop</span><button class="btn sm icon ghost" id="copy" title="Copy" aria-label="Copy command"></button></div>
+
+				<div class="demo" aria-hidden="true">
+					<div class="bar">
+						<span class="dot er"></span><span class="dot" style="background: #fbbf24"></span><span class="dot ok"></span>
+						<div class="url"><span id="typed">cti.hop</span><span class="caret"></span></div>
+					</div>
+					<div class="body">
+						<div class="map"><span class="dot ok"></span>hop.hop <span class="arrow">→</span> <span class="to">127.0.0.1:7777</span></div>
+						<div class="map"><span class="dot ok"></span>cti.hop <span class="arrow">→</span> <span class="to">127.0.0.1:3100</span></div>
+						<div class="map"><span class="dot ok"></span>web.hop <span class="arrow">→</span> <span class="to">127.0.0.1:5173</span></div>
+					</div>
+				</div>
+			</div>
+
+			<section id="features">
+				<div class="sec-h">
+					<h2>Features</h2>
+					<span class="count">6</span>
+				</div>
+				<p class="sub">Local development usually means juggling a pile of port numbers. Hop keeps them straight so you don't have to.</p>
+				<div class="grid">
+					<div class="card">
+						<div class="ico"><i class="ic" data-lucide="search"></i></div>
+						<h3>Smart port scanner</h3>
+						<p>Scan your machine, or your local network. A quick HTTP probe identifies each result, so you see page titles and server names instead of bare numbers.</p>
+					</div>
+					<div class="card">
+						<div class="ico"><i class="ic" data-lucide="tag"></i></div>
+						<h3>Memorable names</h3>
+						<p>Click <b>Name it</b> next to any result. <span class="mono">cti.hop</span> opens <span class="mono">localhost:3100</span>. The control panel itself lives at <span class="mono">hop.hop</span>.</p>
+					</div>
+					<div class="card">
+						<div class="ico"><i class="ic" data-lucide="activity"></i></div>
+						<h3>WebSocket passthrough</h3>
+						<p>The proxy passes WebSocket traffic through, so hot reload (HMR) keeps working with Vite, Next.js and friends.</p>
+					</div>
+					<div class="card">
+						<div class="ico"><i class="ic" data-lucide="lock"></i></div>
+						<h3>Polite to your hosts file</h3>
+						<p>Hop only edits its own clearly marked block and leaves the rest untouched. Names ending in <span class="mono">.localhost</span> need no changes at all.</p>
+					</div>
+					<div class="card">
+						<div class="ico"><i class="ic" data-lucide="monitor"></i></div>
+						<h3>Windows, macOS, Linux</h3>
+						<p>One tool, three platforms. No setup wizard, no daemon to configure.</p>
+					</div>
+					<div class="card">
+						<div class="ico"><i class="ic" data-lucide="package"></i></div>
+						<h3>No dependencies</h3>
+						<p>Built on the Python standard library only. Python 3.9 or newer is all you need.</p>
+					</div>
+				</div>
+			</section>
+
+			<section id="how">
+				<div class="sec-h"><h2>How it works</h2></div>
+				<p class="sub">Two steps, and you never look at a port number again.</p>
+				<div class="grid steps" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+					<div class="card">
+						<h3>Scan</h3>
+						<p>Scan the local machine (and optionally your local network) to find open ports. Each one is identified with a quick HTTP probe.</p>
+					</div>
+					<div class="card">
+						<h3>Name</h3>
+						<p>Name the ports you care about. Typing <span class="mono">cti.hop</span> in the browser opens <span class="mono">localhost:3100</span>.</p>
+					</div>
+				</div>
+				<div style="height: 22px"></div>
+				<div class="shot"><img src="screenshot.png" alt="Hop control panel showing named routes such as hop.hop and cti.hop, and the port scanner" width="1471" height="777" loading="lazy" decoding="async" /></div>
+			</section>
+
+			<section id="install">
+				<div class="sec-h"><h2>Install</h2></div>
+				<p class="sub">Requires Python 3.9 or newer.</p>
+				<div class="tabs">
+					<div>
+						<h3>Run directly</h3>
+						<pre><span class="c"># get the code</span>
+git clone https://github.com/aardaakpinar/hop.git
+cd hop
+
+<span class="c"># Linux and macOS (port 80 and the hosts file need root)</span>
+sudo python3 -m hop
+
+<span class="c"># Windows (run the terminal as Administrator)</span>
+python -m hop</pre>
+					</div>
+					<div>
+						<h3>Or install it</h3>
+						<pre>pip install .
+sudo hop
+
+<span class="c"># on Windows, run `hop` from an Administrator terminal</span></pre>
+					</div>
+				</div>
+				<div class="note">
+					<i class="ic" style="margin-top: 3px" data-lucide="triangle-alert"></i>
+					<span>Administrator or root rights are recommended so Hop can listen on port 80 and write the hosts file. Without them Hop still runs: the proxy falls back to port 8080 and shows you the lines to add to your hosts file by hand.</span>
+				</div>
+				<p class="mu" style="margin-top: 16px">Once Hop is running, open the address it prints (normally <span class="mono">http://hop.hop</span>), scan a port range, and click <b style="color: var(--text)">Name it</b>.</p>
+			</section>
+
+			<section id="options">
+				<div class="sec-h"><h2>Command-line options</h2></div>
+				<p class="sub">Everything has a sensible default. Tweak only what you need.</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Option</th>
+							<th>Description</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>--tld xyz</td>
+							<td>Default suffix (<span class="mono">cti</span> becomes <span class="mono">cti.xyz</span>)</td>
+						</tr>
+						<tr>
+							<td>--panel name</td>
+							<td>Panel address, served at <span class="mono">&lt;name&gt;.&lt;tld&gt;</span></td>
+						</tr>
+						<tr>
+							<td>--ui-port N / --proxy-port N</td>
+							<td>Panel port (default 7777) and proxy port (default 80, then 8080)</td>
+						</tr>
+						<tr>
+							<td>--config-dir, --hosts-file</td>
+							<td>Where routes are stored and which hosts file to edit</td>
+						</tr>
+						<tr>
+							<td>--no-browser</td>
+							<td>Do not open the browser on start</td>
+						</tr>
+						<tr>
+							<td>-v, --verbose</td>
+							<td>Verbose logging</td>
+						</tr>
+						<tr>
+							<td>--version</td>
+							<td>Print the version and exit</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+		</main>
+
+		<footer>
+			<div class="wrap">
+				<span>Hop</span>
+				<div class="sp"></div>
+				<a href="https://github.com/aardaakpinar/hop" target="_blank" rel="noopener">GitHub</a>
+				<a href="https://github.com/aardaakpinar/hop#readme" target="_blank" rel="noopener">README</a>
+			</div>
+		</footer>
+
+		<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+		<script src="assets/main.js" defer></script>
+	</body>
+</html>

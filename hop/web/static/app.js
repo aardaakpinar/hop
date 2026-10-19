@@ -97,12 +97,11 @@ const unbanner = (id) => {
 };
 
 /* ---- status ---- */
-const pill = (k, t) => el("span", { class: "pill " + k }, el("i", { class: "dot" }), t);
 async function loadStatus() {
 	const d = await api("GET", "/api/status");
 	if (d.error) return;
 	S = d;
-	$("#pills").replaceChildren(pill(S.proxy_port ? "ok" : "er", "Proxy :" + (S.proxy_port || "off")), pill(S.admin ? "ok" : "wa", S.admin ? "Administrator" : "Not administrator"), S.local_ip ? el("button", { class: "pill", title: "Copy IP address", onclick: () => copy(S.local_ip, "IP copied") }, ic("copy"), S.local_ip) : null);
+	$("#pills").replaceChildren(S.local_ip ? el("button", { class: "pill", title: "Copy IP address", onclick: () => copy(S.local_ip, "IP copied") }, ic("copy"), S.local_ip) : null);
 	if (!S.admin) banner("admin", "Running without administrator/root rights", "The hosts file cannot be written" + (S.proxy_port != 80 ? " and the proxy is on port " + S.proxy_port + " instead of 80" : "") + ". *.localhost names do not need a hosts entry; for any other name, restart the app as administrator.");
 	else unbanner("admin");
 }
