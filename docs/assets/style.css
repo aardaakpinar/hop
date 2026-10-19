@@ -175,6 +175,21 @@ nav a:hover {
 	height: 16px;
 	flex: none;
 }
+.dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: currentColor;
+	display: inline-block;
+}
+.dot.ok {
+	background: var(--ok);
+	box-shadow: 0 0 0 3px var(--ok-soft);
+}
+.dot.er {
+	background: #f87171;
+	box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+}
 
 /* hero */
 .hero {
