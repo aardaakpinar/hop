@@ -95,10 +95,12 @@ header {
 	align-items: center;
 	gap: 12px;
 }
+.brand .logo,
 .brand img {
 	width: 34px;
 	height: 34px;
 	flex: none;
+	color: var(--accent);
 }
 .brand b {
 	display: block;
@@ -504,4 +506,123 @@ footer .wrap {
 	.brand span {
 		display: none;
 	}
+}
+
+/* install */
+.inst {
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 16px;
+	padding: 18px;
+	box-shadow: var(--shadow);
+}
+.inst-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 18px;
+}
+.seg {
+	display: inline-flex;
+	padding: 3px;
+	gap: 2px;
+	background: var(--panel-2);
+	border: 1px solid var(--line);
+	border-radius: 11px;
+}
+.seg button {
+	font: inherit;
+	font-size: 13.5px;
+	font-weight: 550;
+	padding: 6px 14px;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+}
+.seg button.on {
+	background: var(--accent);
+	color: var(--accent-contrast);
+}
+.inst-hint {
+	font-size: 13px;
+}
+.inst-steps {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 16px;
+	counter-reset: i;
+}
+.inst-steps li {
+	position: relative;
+	padding-left: 38px;
+	counter-increment: i;
+}
+.inst-steps li::before {
+	content: counter(i);
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 26px;
+	height: 26px;
+	display: grid;
+	place-items: center;
+	border-radius: 50%;
+	font-size: 12px;
+	font-weight: 650;
+	border: 1px solid var(--line-2);
+	background: var(--panel-2);
+}
+.inst-steps li:not(:last-child)::after {
+	content: "";
+	position: absolute;
+	left: 12.5px;
+	top: 30px;
+	bottom: -12px;
+	width: 1px;
+	background: var(--line);
+}
+.inst-steps .lbl {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+	margin-bottom: 7px;
+	line-height: 26px;
+	font-size: 14px;
+	height: 26px;
+	margin-top: -2px;
+}
+.inst-steps .lbl .mu {
+	font-size: 13px;
+}
+.cmd {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 4px 4px 4px 14px;
+	background: var(--bg);
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	font-family: var(--mono);
+	font-size: 13.5px;
+}
+.cmd .p {
+	color: var(--muted);
+	user-select: none;
+}
+.cmd code {
+	flex: 1;
+	min-width: 0;
+	overflow-x: auto;
+	white-space: nowrap;
+	font-family: inherit;
+	padding: 6px 0;
+}
+.inst .note {
+	margin-top: 20px;
 }

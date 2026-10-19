@@ -54,12 +54,8 @@
 			}
 		</script>
 		<script>
-			try {
-				const t = localStorage.getItem("hop-theme");
-				document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-			} catch (e) {
-				document.documentElement.dataset.theme = "dark";
-			}
+			document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+			matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => (document.documentElement.dataset.theme = e.matches ? "light" : "dark"));
 		</script>
 		<link rel="stylesheet" href="assets/style.css" />
 	</head>
@@ -67,8 +63,8 @@
 		<header>
 			<div class="hd">
 				<a class="brand" href="#top">
-					<img src="assets/logo.svg" alt="Hop logo" width="34" height="34" fetchpriority="high" />
-					<div><b>Hop</b><span class="mu">Local port scanner and name router</span></div>
+					<img src="assets/logo.svg" alt="Hop logo" width="32" height="32" />
+					<h2>Hop</h2>
 				</a>
 				<div class="sp"></div>
 				<nav aria-label="Main">
@@ -81,20 +77,17 @@
 					<i class="ic" data-lucide="github"></i>
 					GitHub
 				</a>
-				<button class="btn icon ghost" id="theme" title="Toggle theme" aria-label="Toggle theme"></button>
 			</div>
 		</header>
 
 		<main class="wrap" id="top">
 			<div class="hero">
-				<span class="pill ok"><span class="dot ok"></span> Zero dependencies · Python stdlib only</span>
 				<h1>Stop memorizing port numbers.</h1>
 				<p class="lead">Hop scans your machine for open ports and gives them memorable names. Type <span class="mono">cti.hop</span> in your browser and land on <span class="mono">localhost:3100</span>.</p>
 				<div class="cta">
 					<a class="btn primary" href="#install">Get started</a>
 					<a class="btn" href="https://github.com/aardaakpinar/hop" target="_blank" rel="noopener">View on GitHub</a>
 				</div>
-				<div class="install"><span class="prompt">$</span><span id="cmd">sudo python3 -m hop</span><button class="btn sm icon ghost" id="copy" title="Copy" aria-label="Copy command"></button></div>
 
 				<div class="demo" aria-hidden="true">
 					<div class="bar">
@@ -169,30 +162,32 @@
 			<section id="install">
 				<div class="sec-h"><h2>Install</h2></div>
 				<p class="sub">Requires Python 3.9 or newer.</p>
-				<div class="tabs">
-					<div>
-						<h3>Run directly</h3>
-						<pre><span class="c"># get the code</span>
-git clone https://github.com/aardaakpinar/hop.git
-cd hop
-
-<span class="c"># Linux and macOS (port 80 and the hosts file need root)</span>
-sudo python3 -m hop
-
-<span class="c"># Windows (run the terminal as Administrator)</span>
-python -m hop</pre>
+				<div class="inst">
+					<div class="inst-top">
+						<div class="seg" role="tablist" aria-label="Platform">
+							<button role="tab" class="on" data-os="unix" aria-selected="true">Linux / macOS</button>
+							<button role="tab" data-os="win" aria-selected="false">Windows</button>
+						</div>
+						<span class="mu inst-hint" data-os-hint>Run with <span class="mono">sudo</span></span>
 					</div>
-					<div>
-						<h3>Or install it</h3>
-						<pre>pip install .
-sudo hop
-
-<span class="c"># on Windows, run `hop` from an Administrator terminal</span></pre>
+					<ol class="inst-steps">
+						<li>
+							<div class="lbl"><b>Get the code</b></div>
+							<div class="cmd"><span class="p">$</span><code>git clone https://github.com/aardaakpinar/hop.git &amp;&amp; cd hop</code><button class="btn icon ghost cp" aria-label="Copy"></button></div>
+						</li>
+						<li>
+							<div class="lbl"><b>Run it</b><span class="mu">directly from source</span></div>
+							<div class="cmd"><span class="p">$</span><code data-unix="sudo python3 -m hop" data-win="python -m hop">sudo python3 -m hop</code><button class="btn icon ghost cp" aria-label="Copy"></button></div>
+						</li>
+						<li class="alt">
+							<div class="lbl"><b>Or install it</b><span class="mu">with pip</span></div>
+							<div class="cmd"><span class="p">$</span><code data-unix="pip install . &amp;&amp; sudo hop" data-win="pip install . &amp;&amp; hop">pip install . &amp;&amp; sudo hop</code><button class="btn icon ghost cp" aria-label="Copy"></button></div>
+						</li>
+					</ol>
+					<div class="note" data-os-note>
+						<i class="ic" style="margin-top: 3px" data-lucide="triangle-alert"></i>
+						<span data-unix="Port 80 and the hosts file need root. Without it Hop still runs: the proxy falls back to port 8080 and shows you the lines to add to your hosts file by hand." data-win="Run the terminal as Administrator so Hop can listen on port 80 and write the hosts file. Without it the proxy falls back to port 8080 and shows you the lines to add by hand.">Port 80 and the hosts file need root. Without it Hop still runs: the proxy falls back to port 8080 and shows you the lines to add to your hosts file by hand.</span>
 					</div>
-				</div>
-				<div class="note">
-					<i class="ic" style="margin-top: 3px" data-lucide="triangle-alert"></i>
-					<span>Administrator or root rights are recommended so Hop can listen on port 80 and write the hosts file. Without them Hop still runs: the proxy falls back to port 8080 and shows you the lines to add to your hosts file by hand.</span>
 				</div>
 				<p class="mu" style="margin-top: 16px">Once Hop is running, open the address it prints (normally <span class="mono">http://hop.hop</span>), scan a port range, and click <b style="color: var(--text)">Name it</b>.</p>
 			</section>
@@ -243,7 +238,9 @@ sudo hop
 
 		<footer>
 			<div class="wrap">
-				<span>Hop</span>
+				<a class="brand" href="#top">
+					<div><b>Hop</b><span class="mu">Local port scanner and name router</span></div>
+				</a>
 				<div class="sp"></div>
 				<a href="https://github.com/aardaakpinar/hop" target="_blank" rel="noopener">GitHub</a>
 				<a href="https://github.com/aardaakpinar/hop#readme" target="_blank" rel="noopener">README</a>

@@ -1,32 +1,41 @@
-const setIcon = (btn, name) => {
+const mk = (name) => {
 	const i = document.createElement("i");
 	i.className = "ic";
 	i.dataset.lucide = name;
-	btn.replaceChildren(i);
+	return i;
+};
+const setIcon = (btn, name) => {
+	btn.replaceChildren(mk(name));
 	lucide.createIcons();
 };
-const root = document.documentElement;
-const themeBtn = document.getElementById("theme");
-const paint = () => setIcon(themeBtn, root.dataset.theme === "light" ? "moon" : "sun");
-paint();
-themeBtn.onclick = () => {
-	const n = root.dataset.theme === "light" ? "dark" : "light";
-	root.dataset.theme = n;
-	try {
-		localStorage.setItem("hop-theme", n);
-	} catch (e) {}
-	paint();
-};
 
-const copyBtn = document.getElementById("copy");
-setIcon(copyBtn, "copy");
-copyBtn.onclick = async () => {
-	try {
-		await navigator.clipboard.writeText(document.getElementById("cmd").textContent);
-		setIcon(copyBtn, "check");
-		setTimeout(() => setIcon(copyBtn, "copy"), 1400);
-	} catch (e) {}
-};
+// install section
+const inst = document.querySelector(".inst");
+const hint = inst.querySelector("[data-os-hint]");
+inst.querySelectorAll(".seg button").forEach((b) => {
+	b.onclick = () => {
+		const os = b.dataset.os;
+		inst.querySelectorAll(".seg button").forEach((x) => {
+			const on = x === b;
+			x.classList.toggle("on", on);
+			x.setAttribute("aria-selected", on);
+		});
+		inst.querySelectorAll("[data-unix]").forEach((el) => (el.textContent = el.dataset[os]));
+		hint.innerHTML = os === "win" ? "Run as <span class='mono'>Administrator</span>" : "Run with <span class='mono'>sudo</span>";
+	};
+});
+if (/win/i.test(navigator.platform || "")) inst.querySelector('[data-os="win"]').click();
+inst.querySelectorAll(".cp").forEach((btn) => {
+	setIcon(btn, "copy");
+	btn.onclick = async () => {
+		try {
+			await navigator.clipboard.writeText(btn.parentElement.querySelector("code").textContent);
+			setIcon(btn, "check");
+			setTimeout(() => setIcon(btn, "copy"), 1400);
+		} catch (e) {}
+	};
+});
+lucide.createIcons();
 
 // typing demo
 const typed = document.getElementById("typed");
